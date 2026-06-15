@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interaktiv Lampa</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0d1525;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: sans-serif;
+  }
+
+  .scene {
+    position: relative;
+    width: 420px;
+    height: 580px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 30px;
+  }
+
+  .lampshade-group {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+
+    z-index: 5;
+  }
+  @keyframes sway {
+    0%,100% { transform: rotate(0deg); }
+    30%      { transform: rotate(1.2deg); }
+    70%      { transform: rotate(-1.2deg); }
+  }
+
+  .shade-wrap {
+    position: relative;
+    width: 230px;
+    height: 170px;
+  }
+
+  .shade {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(175deg,
+      #8878b8 0%,
+      #7a6aaa 25%,
+      #6a5a9a 55%,
+      #5a4a8a 100%
+    );
+    clip-path: polygon(14% 0%, 86% 0%, 100% 100%, 0% 100%);
+    position: relative;
+    transition: filter 0.4s ease, background 0.4s ease;
+    filter: brightness(0.8);
+  }
+  .shade.on {
+    filter: brightness(1.1);
+    background: linear-gradient(175deg,
+      #a898d8 0%,
+      #9888c8 25%,
+      #8878b8 55%,
+      #7060a8 100%
+    );
+  }
+
+  .shade-inner-glow {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    clip-path: polygon(14% 0%, 86% 0%, 100% 100%, 0% 100%);
+    background: transparent;
+    transition: background 0.5s ease;
+    pointer-events: none;
+  }
+  .shade-inner-glow.on {
+    background: radial-gradient(ellipse at 50% 110%,
+      rgba(255,245,200,0.60) 0%,
+      rgba(255,235,160,0.30) 45%,
+      transparent 70%
+    );
+  }
+
+  /* Pastga tushuvchi yorug'lik */
+  .down-light {
+    position: absolute;
+    top: 195px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 100px;
+    background: transparent;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(14px);
+    transition: background 0.5s ease;
+  }
+  .down-light.on {
+    background: radial-gradient(ellipse at 50% 0%,
+      rgba(255,245,190,0.35) 0%,
+      rgba(255,235,150,0.15) 55%,
+      transparent 85%
+    );
+  }
+
+  .shade-highlight {
+    position: absolute;
+    top: 8%;
+    left: 16%;
+    width: 15%;
+    height: 55%;
+    background: linear-gradient(160deg, rgba(255,255,255,0.18), transparent);
+    clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
+    pointer-events: none;
+  }
+
+  .face {
+    position: absolute;
+    top: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 90px;
+    z-index: 6;
+    pointer-events: none;
+  }
+
+  /* O'chiq: tekis chiziq (bezovta/hafsalasiz ko'z) */
+  .eye {
+    position: absolute;
+    top: 24px;
+    width: 22px;
+    height: 3px;
+    background: #2a1a4e;
+    border-radius: 2px;
+    transition: all 0.35s ease;
+    border: none;
+  }
+  .eye.left  { left: 18px; }
+  .eye.right { right: 18px; }
+
+  /* Yoniq: yoy (kulayotgan ko'z) */
+  .eye.on {
+    width: 22px;
+    height: 11px;
+    background: transparent;
+    border-top: 3.5px solid #1a0a3e;
+    border-left: 2.5px solid transparent;
+    border-right: 2.5px solid transparent;
+    border-radius: 50% 50% 0 0;
+  }
+
+  /* O'chiq: teskari yoy — xafa og'iz */
+  .mouth-wrap {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 38px;
+    height: 18px;
+    border-top: 3.5px solid #2a1a4e;
+    border-left: 2.5px solid transparent;
+    border-right: 2.5px solid transparent;
+    border-radius: 50% 50% 0 0;
+    background: transparent;
+    overflow: visible;
+    transition: all 0.35s ease;
+  }
+
+  /* Yoniq: katta kulgi */
+  .mouth-wrap.on {
+    width: 58px;
+    height: 34px;
+    background: #1a1030;
+    border: none;
+    border-radius: 0 0 30px 30px;
+    overflow: hidden;
+  }
+
+  .tongue {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle at 40% 35%, #ff7744, #cc4422);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .tongue.on {
+    opacity: 1;
+    width: 22px;
+    height: 22px;
+  }
+
+  .cord-wrapper {
+    position: absolute;
+    top: 165px;
+    left: calc(50% - 30px);
+    z-index: 10;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .cord-line {
+    width: 2px;
+    height: 70px;
+    background: linear-gradient(to bottom, rgba(200,200,220,0.6), #bbbbd0);
+    border-radius: 1px;
+
+    animation: cordSway 4s ease-in-out infinite;
+  }
+  @keyframes cordSway {
+    0%,100% { transform: rotate(0deg); }
+    25%      { transform: rotate(4deg); }
+    75%      { transform: rotate(-4deg); }
+  }
+  .cord-wrapper.pulled .cord-line {
+    animation: cordPull 0.5s ease forwards;
+  }
+  @keyframes cordPull {
+    0%   { transform: scaleY(1); }
+    30%  { transform: scaleY(1.45) translateY(12px); }
+    65%  { transform: scaleY(0.88) translateY(-4px); }
+    85%  { transform: scaleY(1.06) translateY(2px); }
+    100% { transform: scaleY(1); }
+  }
+
+  .cord-knob {
+    width: 16px;
+    height: 16px;
+    background: radial-gradient(circle at 40% 35%, #e0e0f5, #aaaac8);
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    position: relative;
+    top: -1px;
+    cursor: pointer;
+  }
+
+  .pole {
+    width: 20px;
+    height: 160px;
+    background: linear-gradient(to right, #d8d8e8, #ffffff, #e0e0f0);
+    border-radius: 4px;
+    position: relative;
+    z-index: 4;
+    margin-top: -2px;
+  }
+  .pole::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 4px; width: 4px;
+    background: rgba(255,255,255,0.55);
+    border-radius: 2px;
+  }
+
+  .base-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 4;
+    margin-top: -2px;
+  }
+  .base-top {
+    width: 50px;
+    height: 12px;
+    background: linear-gradient(to bottom, #e8e8f5, #d0d0e8);
+    border-radius: 4px 4px 0 0;
+  }
+  .base-mid {
+    width: 80px;
+    height: 14px;
+    background: linear-gradient(to bottom, #d8d8ee, #c8c8de);
+    border-radius: 3px;
+  }
+  .base-foot {
+    width: 120px;
+    height: 18px;
+    background: linear-gradient(to bottom, #d0d0e8, #c0c0d8, #b0b0c8);
+    border-radius: 50%;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #445;
+    font-size: 13px;
+    letter-spacing: 1px;
+    user-select: none;
+    transition: color 0.4s;
+    white-space: nowrap;
+  }
+  .hint.on { color: #aa88ff; }
+</style>
+</head>
+<body>
+
+<div class="scene">
+
+  <div class="lampshade-group">
+
+    <div class="shade-wrap">
+      <div class="shade" id="shade">
+        <div class="shade-inner-glow" id="shadeInnerGlow"></div>
+        <div class="shade-highlight"></div>
+      </div>
+
+      <div class="face">
+        <div class="eye left"  id="eyeL"></div>
+        <div class="eye right" id="eyeR"></div>
+        <div class="mouth-wrap" id="mouth">
+          <div class="tongue" id="tongue"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pole"></div>
+
+    <div class="base-group">
+      <div class="base-top"></div>
+      <div class="base-mid"></div>
+      <div class="base-foot"></div>
+    </div>
+
+  </div>
+
+  <div class="down-light" id="downLight"></div>
+
+  <div class="cord-wrapper" id="cordWrapper">
+    <div class="cord-line"></div>
+    <div class="cord-knob"></div>
+  </div>
+
+</div>
+
+<div class="hint" id="hint">↓ ipni bosing</div>
+
+<script>
+  const toggleIds = [
+    'shade', 'shadeInnerGlow', 'downLight',
+    'eyeL', 'eyeR', 'mouth', 'tongue',
+    'hint'
+  ];
+
+  let isOn = false;
+
+  function toggle() {
+    isOn = !isOn;
+    toggleIds.forEach(function(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle('on', isOn);
+    });
+    document.getElementById('hint').textContent = isOn ? '✦ Lampa yoniq' : '↓ ipni bosing';
+
+    const wrapper = document.getElementById('cordWrapper');
+    wrapper.classList.add('pulled');
+    setTimeout(function() { wrapper.classList.remove('pulled'); }, 550);
+  }
+
+  document.getElementById('cordWrapper').addEventListener('click', toggle);
+  document.addEventListener('keydown', function(e) {
+    if (e.code === 'Space' || e.code === 'Enter') {
+      e.preventDefault();
+      toggle();
+    }
+  });
+</script>
+</body>
+</html>
